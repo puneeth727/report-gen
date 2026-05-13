@@ -37,7 +37,7 @@ const cities = [
 
 const inputStyle = { width: '100%', padding: '12px 16px', borderRadius: '8px', border: '1px solid var(--surface-border)', background: 'var(--surface-color)', color: 'var(--text-primary)', fontFamily: 'var(--font-inter)', outline: 'none' };
 const btnOutlineStyle = { background: 'transparent', color: 'var(--text-primary)', border: '1px solid var(--surface-border)', borderRadius: '8px', padding: '10px 20px', fontFamily: 'var(--font-inter)', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center' };
-const selectStyle = { padding: '8px 36px 8px 16px', borderRadius: '8px', border: '1px solid var(--surface-border)', background: 'var(--surface-color)', color: 'var(--text-primary)', fontFamily: 'var(--font-inter)', outline: 'none', appearance: 'none', cursor: 'pointer', fontWeight: 500 };
+const selectStyle: React.CSSProperties = { padding: '8px 36px 8px 16px', borderRadius: '8px', border: '1px solid var(--surface-border)', background: 'var(--surface-color)', color: 'var(--text-primary)', fontFamily: 'var(--font-inter)', outline: 'none', appearance: 'none', cursor: 'pointer', fontWeight: 500 };
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState('gsc');
