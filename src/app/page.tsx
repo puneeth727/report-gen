@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { AreaChart, Area, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Search, Users, FileText, Settings, Download, Bell, Plus, Link as LinkIcon, Trash2, File, Calendar, BarChart2, Globe, Activity, ChevronDown } from 'lucide-react';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 // Mock Data from PPT
 const gscData = [
@@ -44,6 +46,7 @@ export default function Home() {
   const [showAddClient, setShowAddClient] = useState(false);
   const [selectedClient, setSelectedClient] = useState('Brandbros');
   const [dateRange, setDateRange] = useState('Last 7 Days');
+  const reportRef = useRef<HTMLDivElement>(null);
 
   // Client Management State
   const [clients, setClients] = useState([
@@ -150,6 +153,33 @@ export default function Home() {
     }));
   }, [realData, dateRange]);
 
+  // Totals Calculation
+  const totals = useMemo(() => {
+    return realData.reduce((acc, curr) => ({
+      clicks: acc.clicks + curr.clicks,
+      impressions: acc.impressions + curr.impressions,
+      users: acc.users + curr.users
+    }), { clicks: 0, impressions: 0, users: 0 });
+  }, [realData]);
+
+  const handleExportReport = async () => {
+    if (!reportRef.current) return;
+    setLoading(true);
+    try {
+      const canvas = await html2canvas(reportRef.current, { scale: 2 });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`${selectedClient}_SEO_Report_${dateRange}.pdf`);
+    } catch (error) {
+      console.error("Export failed:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const renderFilters = (title: string, subtitle: string) => (
     <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
       <div>
@@ -178,8 +208,9 @@ export default function Home() {
           <Calendar size={16} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--text-secondary)' }} />
         </div>
 
-        <button className="btn-primary">
-          <Download size={18} /> Export Report
+        <button className="btn-primary" onClick={handleExportReport} disabled={loading}>
+          {loading ? <Activity className="spin" size={18} /> : <Download size={18} />} 
+          {loading ? 'Generating...' : 'Export Report'}
         </button>
       </div>
     </header>
@@ -196,8 +227,10 @@ export default function Home() {
             <input type="checkbox" defaultChecked style={{ accentColor: '#4f46e5' }} />
             <h3 style={{ fontSize: '14px', color: '#4f46e5', margin: 0, fontWeight: 600 }}>Total clicks</h3>
           </div>
-          <span style={{ fontSize: '32px', fontWeight: 700, color: '#312e81', display: 'block' }}>246</span>
-          <span style={{ fontSize: '13px', color: '#6366f1' }}>Last 7 days</span>
+          <span style={{ fontSize: '32px', fontWeight: 700, color: '#312e81', display: 'block' }}>
+            {totals.clicks.toLocaleString()}
+          </span>
+          <span style={{ fontSize: '13px', color: '#6366f1' }}>{dateRange}</span>
         </div>
 
         <div className="card glass-panel" style={{ padding: '24px', background: '#f5f3ff', borderColor: '#ddd6fe' }}>
@@ -205,8 +238,10 @@ export default function Home() {
             <input type="checkbox" defaultChecked style={{ accentColor: '#7c3aed' }} />
             <h3 style={{ fontSize: '14px', color: '#7c3aed', margin: 0, fontWeight: 600 }}>Total impressions</h3>
           </div>
-          <span style={{ fontSize: '32px', fontWeight: 700, color: '#4c1d95', display: 'block' }}>3.93k</span>
-          <span style={{ fontSize: '13px', color: '#8b5cf6' }}>Last 7 days</span>
+          <span style={{ fontSize: '32px', fontWeight: 700, color: '#4c1d95', display: 'block' }}>
+            {totals.impressions >= 1000 ? `${(totals.impressions / 1000).toFixed(2)}k` : totals.impressions}
+          </span>
+          <span style={{ fontSize: '13px', color: '#8b5cf6' }}>{dateRange}</span>
         </div>
 
         <div className="card glass-panel" style={{ padding: '24px' }}>
@@ -214,8 +249,10 @@ export default function Home() {
             <input type="checkbox" />
             <h3 style={{ fontSize: '14px', color: 'var(--text-secondary)', margin: 0, fontWeight: 500 }}>Average CTR</h3>
           </div>
-          <span style={{ fontSize: '32px', fontWeight: 700, color: 'var(--text-primary)', display: 'block' }}>6.3%</span>
-          <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Last 7 days</span>
+          <span style={{ fontSize: '32px', fontWeight: 700, color: 'var(--text-primary)', display: 'block' }}>
+            {totals.impressions > 0 ? ((totals.clicks / totals.impressions) * 100).toFixed(1) : 0}%
+          </span>
+          <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{dateRange}</span>
         </div>
 
         <div className="card glass-panel" style={{ padding: '24px' }}>
@@ -223,8 +260,8 @@ export default function Home() {
             <input type="checkbox" />
             <h3 style={{ fontSize: '14px', color: 'var(--text-secondary)', margin: 0, fontWeight: 500 }}>Average position</h3>
           </div>
-          <span style={{ fontSize: '32px', fontWeight: 700, color: 'var(--text-primary)', display: 'block' }}>7.8</span>
-          <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Last 7 days</span>
+          <span style={{ fontSize: '32px', fontWeight: 700, color: 'var(--text-primary)', display: 'block' }}>-</span>
+          <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{dateRange}</span>
         </div>
       </div>
 
@@ -541,7 +578,7 @@ export default function Home() {
       </aside>
 
       {/* Main Content */}
-      <main style={{ flex: 1, padding: '32px 48px', overflowY: 'auto' }}>
+      <main ref={reportRef} style={{ flex: 1, padding: '32px 48px', overflowY: 'auto' }}>
         {activeTab === 'gsc' && renderGSC()}
         {activeTab === 'ga4' && renderGA4()}
         {activeTab === 'bing' && (
