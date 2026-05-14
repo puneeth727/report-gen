@@ -45,6 +45,51 @@ export default function Home() {
   const [selectedClient, setSelectedClient] = useState('Brandbros');
   const [dateRange, setDateRange] = useState('Last 7 Days');
 
+  // Client Management State
+  const [clients, setClients] = useState([
+    { name: 'Brandbros', gsc: 'sc-domain:brandbros.com', ga4: '348291034' },
+    { name: 'JustFeelIt', gsc: 'https://justfeelit.in/', ga4: '984729102' },
+    { name: 'TalkingLands', gsc: 'https://talkinglands.com/', ga4: '128472910' }
+  ]);
+  const [newClientName, setNewClientName] = useState('');
+  const [newClientGSC, setNewClientGSC] = useState('');
+  const [newClientGA4, setNewClientGA4] = useState('');
+
+  const handleAddClient = () => {
+    if (newClientName) {
+      setClients([...clients, { name: newClientName, gsc: newClientGSC, ga4: newClientGA4 }]);
+      setNewClientName('');
+      setNewClientGSC('');
+      setNewClientGA4('');
+      setShowAddClient(false);
+      setSelectedClient(newClientName); // Auto-select the new client
+    }
+  };
+
+  const handleDeleteClient = (indexToRemove: number) => {
+    setClients(clients.filter((_, i) => i !== indexToRemove));
+  };
+
+  // Dynamic Data based on Date Range and Client
+  const getDaysCount = () => {
+    if (dateRange === 'Last 7 Days') return 7;
+    if (dateRange === 'Last 28 Days') return 28;
+    if (dateRange === 'Last 3 Months') return 90;
+    if (dateRange === 'Last 6 Months') return 180;
+    return 14; // Custom
+  };
+
+  const chartData = React.useMemo(() => {
+    const days = getDaysCount();
+    // Generate mock data that actually changes when you click a filter
+    return Array.from({ length: Math.min(days, 30) }).map((_, i) => ({
+      day: `Day ${i + 1}`,
+      clicks: Math.floor(Math.random() * 50) + 10,
+      impressions: Math.floor(Math.random() * 500) + 200,
+      users: Math.floor(Math.random() * 200) + 50,
+    }));
+  }, [dateRange, selectedClient]);
+
   const renderFilters = (title: string, subtitle: string) => (
     <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
       <div>
@@ -56,9 +101,7 @@ export default function Home() {
         {/* Client Selector */}
         <div style={{ position: 'relative' }}>
           <select style={selectStyle} value={selectedClient} onChange={(e) => setSelectedClient(e.target.value)}>
-            <option value="Brandbros">Brandbros</option>
-            <option value="JustFeelIt">JustFeelIt</option>
-            <option value="TalkingLands">TalkingLands</option>
+            {clients.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
           </select>
           <ChevronDown size={16} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--text-secondary)' }} />
         </div>
@@ -128,7 +171,7 @@ export default function Home() {
       {/* GSC Chart */}
       <div className="card glass-panel" style={{ height: '400px', padding: '32px', marginBottom: '24px' }}>
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={gscData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+          <LineChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--surface-border)" vertical={false} />
             <XAxis dataKey="day" stroke="var(--text-secondary)" tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} axisLine={false} tickLine={false} />
             
@@ -181,7 +224,7 @@ export default function Home() {
         {/* GA4 Chart */}
         <div className="card glass-panel" style={{ height: '400px', padding: '32px' }}>
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={ga4Data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+            <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id="colorUsers" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.2}/>
@@ -252,7 +295,7 @@ export default function Home() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             <div>
               <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)', fontWeight: 500 }}>Client/Brand Name</label>
-              <input type="text" placeholder="e.g. Brandbros" style={inputStyle} />
+              <input type="text" placeholder="e.g. Brandbros" style={inputStyle} value={newClientName} onChange={(e) => setNewClientName(e.target.value)} />
             </div>
             
             <h3 style={{ marginTop: '16px', fontSize: '18px', borderBottom: '1px solid var(--surface-border)', paddingBottom: '8px' }}>Properties & Integrations</h3>
@@ -268,7 +311,7 @@ export default function Home() {
                   </div>
                 </div>
               </div>
-              <input type="text" placeholder="sc-domain:brandbros.com or https://brandbros.com/" style={{ ...inputStyle, background: 'var(--surface-color)' }} />
+              <input type="text" placeholder="sc-domain:brandbros.com or https://brandbros.com/" style={{ ...inputStyle, background: 'var(--surface-color)' }} value={newClientGSC} onChange={(e) => setNewClientGSC(e.target.value)} />
             </div>
 
             {/* GA4 */}
@@ -282,11 +325,11 @@ export default function Home() {
                   </div>
                 </div>
               </div>
-              <input type="text" placeholder="e.g. 348291034" style={{ ...inputStyle, background: 'var(--surface-color)' }} />
+              <input type="text" placeholder="e.g. 348291034" style={{ ...inputStyle, background: 'var(--surface-color)' }} value={newClientGA4} onChange={(e) => setNewClientGA4(e.target.value)} />
             </div>
 
             <div style={{ display: 'flex', gap: '12px', marginTop: '16px', borderTop: '1px solid var(--surface-border)', paddingTop: '24px' }}>
-              <button className="btn-primary" onClick={() => setShowAddClient(false)}>Save Client Configuration</button>
+              <button className="btn-primary" onClick={handleAddClient}>Save Client Configuration</button>
               <button style={btnOutlineStyle} onClick={() => setShowAddClient(false)}>Cancel</button>
             </div>
           </div>
@@ -303,13 +346,13 @@ export default function Home() {
               </tr>
             </thead>
             <tbody>
-              {[{name: 'Brandbros', gsc: 'sc-domain:brandbros.com', ga4: '348291034'}, {name: 'JustFeelIt', gsc: 'https://justfeelit.in/', ga4: '984729102'}, {name: 'TalkingLands', gsc: 'https://talkinglands.com/', ga4: '128472910'}].map((client, i) => (
+              {clients.map((client, i) => (
                 <tr key={i} style={{ borderBottom: '1px solid var(--surface-border)', transition: 'background 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0.02)'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
                   <td style={{ padding: '16px 24px', fontWeight: 600 }}>{client.name}</td>
                   <td style={{ padding: '16px 24px', color: 'var(--text-secondary)', fontFamily: 'monospace' }}>{client.gsc}</td>
                   <td style={{ padding: '16px 24px', color: 'var(--text-secondary)', fontFamily: 'monospace' }}>{client.ga4}</td>
                   <td style={{ padding: '16px 24px', textAlign: 'right' }}>
-                    <button style={{ background: 'transparent', border: 'none', color: 'var(--danger-color)', cursor: 'pointer', padding: '8px', borderRadius: '8px' }} onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}><Trash2 size={18} /></button>
+                    <button onClick={() => handleDeleteClient(i)} style={{ background: 'transparent', border: 'none', color: 'var(--danger-color)', cursor: 'pointer', padding: '8px', borderRadius: '8px' }} onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}><Trash2 size={18} /></button>
                   </td>
                 </tr>
               ))}
