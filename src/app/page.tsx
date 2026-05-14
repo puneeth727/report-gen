@@ -114,12 +114,18 @@ export default function Home() {
         const ga4Raw = await ga4Res.json();
 
         // Map and Merge Data
-        const merged = (gscRows || []).map((row: any) => ({
-          day: row.keys[0],
-          clicks: row.clicks,
-          impressions: row.impressions,
-          users: Math.floor(Math.random() * 100) // Placeholder until GA4 mapping is refined
-        }));
+        const ga4Rows = ga4Raw.rows || [];
+        const merged = (gscRows || []).map((row: any) => {
+          const dateStr = row.keys[0].replace(/-/g, ''); // Convert 2026-05-01 to 20260501
+          const ga4Match = ga4Rows.find((r: any) => r.dimensionValues[0].value === dateStr);
+          
+          return {
+            day: row.keys[0],
+            clicks: row.clicks,
+            impressions: row.impressions,
+            users: ga4Match ? parseInt(ga4Match.metricValues[0].value) : 0
+          };
+        });
 
         if (merged.length > 0) setRealData(merged);
       } catch (err) {
