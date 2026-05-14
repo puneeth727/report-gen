@@ -50,7 +50,7 @@ export default function Home() {
     { name: 'Brandbros', gsc: 'sc-domain:brandbros.com', ga4: '348291034' },
     { name: 'JustFeelIt', gsc: 'https://justfeelit.in/', ga4: '984729102' },
     { name: 'TalkingLands', gsc: 'https://talkinglands.com/', ga4: '128472910' },
-    { name: 'Makermasti', gsc: 'https://makermasti.com', ga4: '288772051' }
+    { name: 'Makermasti', gsc: 'https://makermasti.com/', ga4: '288772051' }
   ]);
   const [newClientName, setNewClientName] = useState('');
   const [newClientGSC, setNewClientGSC] = useState('');
