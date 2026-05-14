@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { AreaChart, Area, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Search, Users, FileText, Settings, Download, Bell, Plus, Link as LinkIcon, Trash2, File, Calendar, BarChart2, Globe, Activity, ChevronDown } from 'lucide-react';
 
@@ -71,25 +71,78 @@ export default function Home() {
     setClients(clients.filter((_, i) => i !== indexToRemove));
   };
 
-  // Dynamic Data based on Date Range and Client
-  const getDaysCount = () => {
-    if (dateRange === 'Last 7 Days') return 7;
-    if (dateRange === 'Last 28 Days') return 28;
-    if (dateRange === 'Last 3 Months') return 90;
-    if (dateRange === 'Last 6 Months') return 180;
-    return 14; // Custom
+  const [loading, setLoading] = useState(false);
+  const [realData, setRealData] = useState<any[]>([]);
+
+  const getDateParams = () => {
+    const end = new Date();
+    const start = new Date();
+    if (dateRange === 'Last 7 Days') start.setDate(end.getDate() - 7);
+    else if (dateRange === 'Last 28 Days') start.setDate(end.getDate() - 28);
+    else if (dateRange === 'Last 3 Months') start.setMonth(end.getMonth() - 3);
+    else if (dateRange === 'Last 6 Months') start.setMonth(end.getMonth() - 6);
+    
+    return {
+      start: start.toISOString().split('T')[0],
+      end: end.toISOString().split('T')[0]
+    };
   };
 
-  const chartData = React.useMemo(() => {
-    const days = getDaysCount();
-    // Generate mock data that actually changes when you click a filter
-    return Array.from({ length: Math.min(days, 30) }).map((_, i) => ({
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      const client = clients.find(c => c.name === selectedClient);
+      if (!client) return;
+
+      const { start, end } = getDateParams();
+
+      try {
+        // Fetch GSC Data
+        const gscRes = await fetch('/api/gsc', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ propertyUrl: client.gsc, startDate: start, endDate: end })
+        });
+        const gscRows = await gscRes.json();
+
+        // Fetch GA4 Data
+        const ga4Res = await fetch('/api/ga4', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ propertyId: client.ga4, startDate: start, endDate: end })
+        });
+        const ga4Raw = await ga4Res.json();
+
+        // Map and Merge Data
+        const merged = (gscRows || []).map((row: any) => ({
+          day: row.keys[0],
+          clicks: row.clicks,
+          impressions: row.impressions,
+          users: Math.floor(Math.random() * 100) // Placeholder until GA4 mapping is refined
+        }));
+
+        if (merged.length > 0) setRealData(merged);
+      } catch (err) {
+        console.error("Fetch error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [selectedClient, dateRange]);
+
+  const chartData = useMemo(() => {
+    if (realData.length > 0) return realData;
+    
+    // Fallback to mock data if API fails or no data yet
+    return Array.from({ length: 7 }).map((_, i) => ({
       day: `Day ${i + 1}`,
       clicks: Math.floor(Math.random() * 50) + 10,
       impressions: Math.floor(Math.random() * 500) + 200,
       users: Math.floor(Math.random() * 200) + 50,
     }));
-  }, [dateRange, selectedClient]);
+  }, [realData, dateRange]);
 
   const renderFilters = (title: string, subtitle: string) => (
     <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
